@@ -1,0 +1,22 @@
+{
+  "name": "chargepoint_notifications",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "engines": {
+    "node": ">10.0.0",
+    "npm": ">6.0.0"
+  },
+  "dependencies": {
+    "axios": "^0.19.1",
+    "dotenv": "^8.2.0",
+    "querystring": "^0.2.0"
+  }
+}
