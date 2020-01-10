@@ -2,7 +2,7 @@ require('dotenv').config();
 const Axios = require('axios');
 const qs = require('querystring');
 
-const DEBUG_MODE = process.env.CPN_DEBUG_MODE || true;
+const DEBUG_MODE = process.env.CPN_DEBUG_MODE === 'true';
 
 const slackHookUrl = process.env.CPN_SLACK_HOOK_URL;
 const slackUserIdsString = process.env.CPN_SLACK_USER_IDS || 'farzaddaei:WCMTDDDRV';
