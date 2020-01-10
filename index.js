@@ -107,7 +107,7 @@ const sendSlackMessage = (text) => {
 /**
  * The main polling function
  */
-const pollChargePoint = async () => {
+const pollChargePoint = async (firstRun) => {
     if (!chargePointToken || new Date(lastAuth.getTime() + authDelay) <= new Date()) {
         chargePointToken = await generateChargePointToken(chargePointUsername, chargePointPassword);
         lastAuth = new Date();
@@ -126,13 +126,15 @@ const pollChargePoint = async () => {
             chargingUsers[outlet] = user;
 
             // Notify user started charge session and end time
-            const endTime = new Date((chargingUsers[outlet].startTime + maxChargingTime) * 1000);
+            if (!firstRun) {
+                const endTime = new Date((chargingUsers[outlet].startTime + maxChargingTime) * 1000);
 
-            sendSlackMessage(`${chargingUsers[outlet].name} has started charging. Their session will end at ${endTime.toLocaleTimeString('en-US',
-                {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                })}.`);
+                sendSlackMessage(`${chargingUsers[outlet].name} has started charging. Their session will end at ${endTime.toLocaleTimeString('en-US',
+                    {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    })}.`);
+            }
         }
 
         // Notify 5 minutes of charging left
@@ -166,7 +168,7 @@ const pollChargePoint = async () => {
     //console.log(stationQueueDetail);
 };
 
-pollChargePoint()
+pollChargePoint(true)
     .then(() => {
         setInterval(pollChargePoint, pollingDelay);
     })
