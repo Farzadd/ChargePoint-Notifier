@@ -2,11 +2,10 @@ require('dotenv').config();
 const Axios = require('axios');
 const qs = require('querystring');
 
-const DEBUG_MODE = process.env.CPN_DEBUG_MODE || false;
+const DEBUG_MODE = process.env.CPN_DEBUG_MODE || true;
 
 const slackHookUrl = process.env.CPN_SLACK_HOOK_URL;
 const slackUserIdsString = process.env.CPN_SLACK_USER_IDS || 'farzaddaei:WCMTDDDRV';
-const slackUserIds = {};
 
 const chargePointBaseUrl = process.env.CPN_CP_BASE_URL || 'https://na.chargepoint.com';
 const chargePointUsername = process.env.CPN_CP_USERNAME;
@@ -16,9 +15,17 @@ const chargePointDeviceId = process.env.CPN_CP_DEVICE_ID || '93737';
 const pollingDelay = process.env.CPN_POLLING_DELAY || 60 * 1000;
 const authDelay = process.env.CPN_AUTH_DELAY || 30 * 60 * 1000;
 const exitWarningOffset = process.env.CPN_WARNING_OFFSET || 5 * 60;
+const workingStarTime = process.env.CPN_WORKING_START_TIME || 8;
+const workingStopTime = process.env.CPN_WORKING_STOP_TIME || 18;
+
+const sundayDayOfWeek = 1;
+const saturdayDayOfWeek = 6;
+const weekendSleepTime = 6 * 60 * 60 * 1000;
+const afterHoursSleepTime = 60 * 60 * 1000;
 
 let chargePointToken;
 let lastAuth;
+const slackUserIds = {};
 const chargingUsers = {1: null, 2: null};
 const onHoldUsers = {1: null, 2: null};
 
@@ -63,8 +70,6 @@ const getChargePointStationQueueDetail = async (deviceId, token) => {
 
     const data = response.data.response.message;
 
-    //console.log(JSON.stringify(response.data));
-
     return {
         maxChargingTime: parseInt(data.maxChargingTime),
         currTime: parseInt(data.currTime),
@@ -107,11 +112,23 @@ const sendSlackMessage = (text) => {
  * The main polling function
  */
 const pollChargePoint = async (firstRun) => {
+    // Hacky/Lazy implementation for start/stop time
+    const dateNow = new Date();
+    if (dateNow.getDay() === sundayDayOfWeek || dateNow.getDay() === saturdayDayOfWeek) {
+        setTimeout(pollChargePoint, weekendSleepTime);
+        return;
+    } else if (dateNow.getHours() < workingStarTime || dateNow.getHours() > workingStopTime) {
+        setTimeout(pollChargePoint, afterHoursSleepTime);
+        return;
+    }
+
+    // (Re)Authenticate with ChargePoint
     if (!chargePointToken || new Date(lastAuth.getTime() + authDelay) <= new Date()) {
         chargePointToken = await generateChargePointToken(chargePointUsername, chargePointPassword);
         lastAuth = new Date();
     }
 
+    // Retrieve ChargePoint station data
     const stationQueueDetail = await getChargePointStationQueueDetail(chargePointDeviceId, chargePointToken);
     const maxChargingTime = stationQueueDetail.maxChargingTime;
     const currTime = stationQueueDetail.currTime;
@@ -164,7 +181,8 @@ const pollChargePoint = async (firstRun) => {
         }
     });
 
-    //console.log(stationQueueDetail);
+    // Schedule the next poll
+    setTimeout(pollChargePoint, pollingDelay);
 };
 
 // Parse the slack user ids
@@ -182,7 +200,7 @@ try {
 // Start polling
 pollChargePoint(true)
     .then(() => {
-        setInterval(pollChargePoint, pollingDelay);
+        console.log('Polling started...')
     })
     .catch(error => {
         console.log(`Something went wrong... ${error}`);
