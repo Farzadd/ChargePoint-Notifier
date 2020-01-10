@@ -5,9 +5,8 @@ const qs = require('querystring');
 const DEBUG_MODE = process.env.CPN_DEBUG_MODE || false;
 
 const slackHookUrl = process.env.CPN_SLACK_HOOK_URL;
-const slackUserIds = {
-    'farzaddaei': 'WCMTDDDRV'
-};
+const slackUserIdsString = process.env.CPN_SLACK_USER_IDS || 'farzaddaei:WCMTDDDRV';
+const slackUserIds = {};
 
 const chargePointBaseUrl = process.env.CPN_CP_BASE_URL || 'https://na.chargepoint.com';
 const chargePointUsername = process.env.CPN_CP_USERNAME;
@@ -168,6 +167,19 @@ const pollChargePoint = async (firstRun) => {
     //console.log(stationQueueDetail);
 };
 
+// Parse the slack user ids
+try {
+    slackUserIdsString.split(';').forEach(user => {
+        const userParts = user.split(':');
+        if (userParts.length < 2) return;
+
+        slackUserIds[userParts[0]] = userParts[1];
+    });
+} catch (error) {
+    console.log(`Unable to parse user ids: ${error}`);
+}
+
+// Start polling
 pollChargePoint(true)
     .then(() => {
         setInterval(pollChargePoint, pollingDelay);
