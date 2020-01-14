@@ -18,7 +18,7 @@ const exitWarningOffset = process.env.CPN_WARNING_OFFSET || 5 * 60;
 const workingStarTime = process.env.CPN_WORKING_START_TIME || 8;
 const workingStopTime = process.env.CPN_WORKING_STOP_TIME || 18;
 
-const sundayDayOfWeek = 1;
+const sundayDayOfWeek = 0;
 const saturdayDayOfWeek = 6;
 const weekendSleepTime = 6 * 60 * 60 * 1000;
 const afterHoursSleepTime = 60 * 60 * 1000;
